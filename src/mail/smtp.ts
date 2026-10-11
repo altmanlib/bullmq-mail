@@ -1,6 +1,10 @@
-import nodemailer from "nodemailer";
 import type { Transporter } from "nodemailer";
-import { MailError, type MailMessage, type SmtpProviderConfig } from "./types.ts";
+import nodemailer from "nodemailer";
+import {
+  MailError,
+  type MailMessage,
+  type SmtpProviderConfig,
+} from "./types.ts";
 
 export type SmtpTransport = {
   id: string;
@@ -40,13 +44,21 @@ export function createSmtpTransport(config: SmtpProviderConfig): SmtpTransport {
           subject: message.subject,
           ...(message.text !== undefined ? { text: message.text } : {}),
           ...(message.html !== undefined ? { html: message.html } : {}),
-          ...(message.replyTo !== undefined ? { replyTo: message.replyTo } : {}),
+          ...(message.replyTo !== undefined
+            ? { replyTo: message.replyTo }
+            : {}),
         });
-        return { messageId: typeof info.messageId === "string" ? info.messageId : undefined };
+        return {
+          messageId:
+            typeof info.messageId === "string" ? info.messageId : undefined,
+        };
       } catch (error) {
-        throw new MailError(`smtp ${config.id} failed: ${error instanceof Error ? error.message : String(error)}`, {
-          cause: error,
-        });
+        throw new MailError(
+          `smtp ${config.id} failed: ${error instanceof Error ? error.message : String(error)}`,
+          {
+            cause: error,
+          },
+        );
       }
     },
     async close() {

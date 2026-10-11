@@ -22,7 +22,7 @@ Client ──POST /api/mail──▶ API (Bun.serve + Queue)
 
 | 点 | 做法 |
 |---|---|
-| 进程分离 | `src/main.ts`（API）与 `src/worker-main.ts`（Worker）独立进程，可水平扩 Worker |
+| 进程分离 | `src/main.ts`（API）与 `src/worker.ts`（Worker）独立进程，可水平扩 Worker |
 | 重试 | 默认 5 次，指数退避（3s 起） |
 | 限流 | Worker `limiter` 全局限制发送速率，保护 SMTP |
 | 幂等 | `idempotencyKey` → BullMQ `jobId` |

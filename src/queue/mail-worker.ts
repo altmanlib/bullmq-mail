@@ -1,7 +1,7 @@
-import { Worker } from "bullmq";
 import type { ConnectionOptions, Job } from "bullmq";
-import type { Mailer } from "../mail/types.ts";
+import { Worker } from "bullmq";
 import { log } from "../log.ts";
+import type { Mailer } from "../mail/types.ts";
 import {
   MAIL_JOB_SEND,
   MAIL_QUEUE_NAME,
@@ -17,22 +17,26 @@ export type MailWorkerOptions = {
   rateDurationMs: number;
 };
 
-export type MailWorker = Worker<SendMailJobData, SendMailJobResult, typeof MAIL_JOB_SEND>;
+export type MailWorker = Worker<
+  SendMailJobData,
+  SendMailJobResult,
+  typeof MAIL_JOB_SEND
+>;
 
 export function createMailWorker(options: MailWorkerOptions): MailWorker {
-  const worker = new Worker<SendMailJobData, SendMailJobResult, typeof MAIL_JOB_SEND>(
-    MAIL_QUEUE_NAME,
-    async (job) => processMailJob(job, options.mailer),
-    {
-      connection: options.connection,
-      concurrency: options.concurrency,
-      // Global rate limit across all worker processes for this queue.
-      limiter: {
-        max: options.rateMax,
-        duration: options.rateDurationMs,
-      },
+  const worker = new Worker<
+    SendMailJobData,
+    SendMailJobResult,
+    typeof MAIL_JOB_SEND
+  >(MAIL_QUEUE_NAME, async (job) => processMailJob(job, options.mailer), {
+    connection: options.connection,
+    concurrency: options.concurrency,
+    // Global rate limit across all worker processes for this queue.
+    limiter: {
+      max: options.rateMax,
+      duration: options.rateDurationMs,
     },
-  );
+  });
 
   worker.on("completed", (job, result) => {
     log.info("mail.job.completed", {
@@ -79,7 +83,9 @@ async function processMailJob(
   }
 
   await job.updateProgress(10);
-  await job.log(`sending via mailer=${mailer.id} attempt=${job.attemptsMade + 1}`);
+  await job.log(
+    `sending via mailer=${mailer.id} attempt=${job.attemptsMade + 1}`,
+  );
 
   const result = await mailer.send({
     to: job.data.to,
@@ -90,7 +96,9 @@ async function processMailJob(
   });
 
   await job.updateProgress(100);
-  await job.log(`sent via provider=${result.providerId} messageId=${result.messageId ?? "-"}`);
+  await job.log(
+    `sent via provider=${result.providerId} messageId=${result.messageId ?? "-"}`,
+  );
 
   return {
     providerId: result.providerId,

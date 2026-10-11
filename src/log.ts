@@ -1,6 +1,11 @@
 type Fields = Record<string, unknown>;
 
-function line(level: string, event: string, fields?: Fields, error?: unknown): string {
+function line(
+  level: string,
+  event: string,
+  fields?: Fields,
+  error?: unknown,
+): string {
   const payload: Fields = {
     ts: new Date().toISOString(),
     level,

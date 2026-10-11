@@ -2,8 +2,8 @@ import { createBullBoard } from "@bull-board/api";
 import { BullMQAdapter } from "@bull-board/api/bullMQAdapter";
 import { BunAdapter } from "@bull-board/bun";
 import type { Job } from "bullmq";
-import { enqueueMail, type MailQueue } from "../queue/mail-queue.ts";
 import type { EnqueueMailInput } from "../queue/mail-jobs.ts";
+import { enqueueMail, type MailQueue } from "../queue/mail-queue.ts";
 
 export type ApiServer = {
   port: number;
@@ -54,7 +54,10 @@ export function startApiServer(options: {
           try {
             body = await request.json();
           } catch {
-            return Response.json({ error: "invalid JSON body" }, { status: 400 });
+            return Response.json(
+              { error: "invalid JSON body" },
+              { status: 400 },
+            );
           }
 
           const parsed = parseEnqueueBody(body);
@@ -74,8 +77,12 @@ export function startApiServer(options: {
             );
           } catch (error) {
             // BullMQ throws when jobId already exists (idempotency hit).
-            const message = error instanceof Error ? error.message : String(error);
-            if (message.includes("Job is already") || message.toLowerCase().includes("exists")) {
+            const message =
+              error instanceof Error ? error.message : String(error);
+            if (
+              message.includes("Job is already") ||
+              message.toLowerCase().includes("exists")
+            ) {
               return Response.json(
                 {
                   error: "job with this idempotencyKey already exists",
@@ -91,9 +98,11 @@ export function startApiServer(options: {
 
       "/api/mail/:id": {
         GET: async (request) => {
-          const id = (request as Request & { params: { id: string } }).params.id;
+          const id = (request as Request & { params: { id: string } }).params
+            .id;
           const job = await options.queue.getJob(id);
-          if (!job) return Response.json({ error: "job not found" }, { status: 404 });
+          if (!job)
+            return Response.json({ error: "job not found" }, { status: 404 });
           return Response.json(await serializeJob(job));
         },
       },
@@ -116,7 +125,9 @@ export function startApiServer(options: {
   };
 }
 
-function parseEnqueueBody(body: unknown): { input: EnqueueMailInput } | { error: string } {
+function parseEnqueueBody(
+  body: unknown,
+): { input: EnqueueMailInput } | { error: string } {
   if (body === null || typeof body !== "object" || Array.isArray(body)) {
     return { error: "body must be an object" };
   }
@@ -153,7 +164,9 @@ function parseEnqueueBody(body: unknown): { input: EnqueueMailInput } | { error:
   };
 }
 
-function parseRecipients(value: unknown): { value: string | string[] } | { error: string } {
+function parseRecipients(
+  value: unknown,
+): { value: string | string[] } | { error: string } {
   if (typeof value === "string") {
     const trimmed = value.trim();
     if (!trimmed) return { error: "to is required" };
@@ -176,7 +189,8 @@ function optionalString(value: unknown): string | undefined {
 function optionalInt(value: unknown): number | undefined | { error: string } {
   if (value === undefined || value === null || value === "") return undefined;
   const n = Number(value);
-  if (!Number.isInteger(n) || n < 0) return { error: "priority/delayMs must be a non-negative integer" };
+  if (!Number.isInteger(n) || n < 0)
+    return { error: "priority/delayMs must be a non-negative integer" };
   return n;
 }
 

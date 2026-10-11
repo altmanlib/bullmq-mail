@@ -1,5 +1,10 @@
 import { createSmtpTransport, type SmtpTransport } from "./smtp.ts";
-import { MailError, type Mailer, type MailMessage, type SmtpProviderConfig } from "./types.ts";
+import {
+  MailError,
+  type Mailer,
+  type MailMessage,
+  type SmtpProviderConfig,
+} from "./types.ts";
 
 export type PooledProvider = {
   id: string;
@@ -18,9 +23,13 @@ export type PoolOptions = {
  * Weighted SMTP pool with per-account cooldown after failure.
  * Each send picks an order by weight, skips resting accounts, and fails over to the next.
  */
-export function createPoolMailer(providers: readonly SmtpProviderConfig[], options: PoolOptions = {}): Mailer & { close(): Promise<void> } {
+export function createPoolMailer(
+  providers: readonly SmtpProviderConfig[],
+  options: PoolOptions = {},
+): Mailer & { close(): Promise<void> } {
   const enabled = providers.filter((p) => p.enabled);
-  if (enabled.length === 0) throw new MailError("mail pool has no enabled providers");
+  if (enabled.length === 0)
+    throw new MailError("mail pool has no enabled providers");
 
   const pooled: PooledProvider[] = enabled.map((config) => ({
     id: config.id,
@@ -37,7 +46,8 @@ export function createPoolMailer(providers: readonly SmtpProviderConfig[], optio
     id: "pool",
     async send(message: MailMessage) {
       const order = pickOrder(pooled, resting, now(), random);
-      if (order.length === 0) throw new MailError("mail: every provider is resting after a failure");
+      if (order.length === 0)
+        throw new MailError("mail: every provider is resting after a failure");
 
       const failures: string[] = [];
       for (const provider of order) {
@@ -46,12 +56,17 @@ export function createPoolMailer(providers: readonly SmtpProviderConfig[], optio
           resting.delete(provider.id);
           return { providerId: provider.id, messageId: result.messageId };
         } catch (error) {
-          failures.push(`${provider.id}: ${error instanceof Error ? error.message : String(error)}`);
-          if (provider.cooldownMs > 0) resting.set(provider.id, now() + provider.cooldownMs);
+          failures.push(
+            `${provider.id}: ${error instanceof Error ? error.message : String(error)}`,
+          );
+          if (provider.cooldownMs > 0)
+            resting.set(provider.id, now() + provider.cooldownMs);
           options.onFail?.(provider.id, error);
         }
       }
-      throw new MailError(`mail: every provider failed: ${failures.join("; ")}`);
+      throw new MailError(
+        `mail: every provider failed: ${failures.join("; ")}`,
+      );
     },
     async close() {
       await Promise.all(pooled.map((p) => p.transport.close()));
@@ -79,7 +94,10 @@ function pickOrder(
   return order;
 }
 
-function weightedIndex(pool: readonly PooledProvider[], random: () => number): number {
+function weightedIndex(
+  pool: readonly PooledProvider[],
+  random: () => number,
+): number {
   const total = pool.reduce((sum, provider) => sum + provider.weight, 0);
   if (total <= 0) return 0;
   let point = random() * total;
