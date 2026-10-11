@@ -1,0 +1,99 @@
+name: bullmq-mail-prod
+
+# Production-style stack: build the Bun image, no source bind-mount.
+# Usage:
+#   docker compose -f compose-prod.yml up -d --build
+#   docker compose -f compose-prod.yml up -d --scale worker=2
+#   docker compose -f compose-prod.yml port api 3000
+
+x-app: &app
+  build:
+    context: .
+    dockerfile: Dockerfile
+  image: bullmq-mail:local
+
+services:
+  redis:
+    image: redis:7-alpine
+    command: ["redis-server", "--appendonly", "yes", "--save", "60", "1000"]
+    # Random host port to avoid clashing with other local Redis instances.
+    # Discover with: docker compose -f compose-prod.yml port redis 6379
+    ports:
+      - "6379"
+    volumes:
+      - redis-data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+      start_period: 5s
+    restart: unless-stopped
+
+  mailpit:
+    image: axllent/mailpit:latest
+    environment:
+      MP_MAX_MESSAGES: "5000"
+      MP_DATABASE: /data/mailpit.db
+      MP_SMTP_AUTH_ACCEPT_ANY: "1"
+      MP_SMTP_AUTH_ALLOW_INSECURE: "1"
+    volumes:
+      - mailpit-data:/data
+    # Random host ports. Discover with:
+    #   docker compose -f compose-prod.yml port mailpit 8025  # Web UI
+    #   docker compose -f compose-prod.yml port mailpit 1025  # SMTP
+    ports:
+      - "8025"
+      - "1025"
+    healthcheck:
+      test: ["CMD", "wget", "-q", "-O", "-", "http://127.0.0.1:8025/api/v1/info"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+      start_period: 5s
+    restart: unless-stopped
+
+  api:
+    <<: *app
+    command: ["src/main.ts"]
+    env_file:
+      - .env
+    environment:
+      REDIS_HOST: redis
+      REDIS_PORT: "6379"
+      API_HOST: 0.0.0.0
+      API_PORT: "3000"
+    # Random host port. Discover with: docker compose -f compose-prod.yml port api 3000
+    ports:
+      - "3000"
+    depends_on:
+      redis:
+        condition: service_healthy
+    stop_grace_period: 30s
+    restart: unless-stopped
+
+  worker:
+    <<: *app
+    command: ["src/worker.ts"]
+    env_file:
+      - .env
+    environment:
+      REDIS_HOST: redis
+      REDIS_PORT: "6379"
+      # Default to in-network Mailpit; mount ./config to override with real SMTP YAML.
+      MAIL_PROVIDERS_FILE: /app/config/mail-providers.mailpit.yml
+      # Keep process grace shorter than stop_grace_period so Redis connections close cleanly.
+      SHUTDOWN_GRACE_MS: "20000"
+    volumes:
+      - ./config:/app/config:ro
+    depends_on:
+      redis:
+        condition: service_healthy
+    stop_grace_period: 30s
+    restart: unless-stopped
+    # Scale workers independently:
+    #   docker compose -f compose-prod.yml up -d --scale worker=2
+
+volumes:
+  redis-data:
+  mailpit-data:

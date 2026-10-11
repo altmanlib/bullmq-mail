@@ -67,17 +67,19 @@ curl -s http://127.0.0.1:3000/api/mail \
 
 ## 全量 compose（API + Worker + Redis）
 
+开发态 `compose.yml` 仍挂载源码，直接用 `oven/bun` 跑。生产态用 `compose-prod.yml`：构建根目录 `Dockerfile`（仅生产依赖；API / Worker 共用同一镜像）。
+
 ```bash
 cp .env.example .env
-docker compose up -d
-docker compose up -d --scale worker=2
+docker compose -f compose-prod.yml up -d --build
+docker compose -f compose-prod.yml up -d --scale worker=2
 ```
 
 宿主机端口使用随机映射，避免和本机已有 Redis / HTTP 服务冲突：
 
 ```bash
-docker compose port redis 6379
-docker compose port api 3000
+docker compose -f compose-prod.yml port redis 6379
+docker compose -f compose-prod.yml port api 3000
 ```
 
 compose 内 `REDIS_HOST=redis` 会覆盖 `.env` 里的本机地址。本机只起 Redis、进程跑在宿主机时：

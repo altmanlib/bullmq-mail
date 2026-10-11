@@ -1,0 +1,29 @@
+.git
+.gitignore
+.DS_Store
+.env
+.env.*
+!.env.example
+
+node_modules
+out
+dist
+coverage
+*.lcov
+logs
+.cache
+.eslintcache
+*.tsbuildinfo
+.idea
+
+# Local SMTP secrets must never enter the image
+config/mail-providers.yml
+
+# Dev / docs tooling (not needed at runtime)
+Makefile
+AGENTS.md
+README.md
+biome.json
+tsconfig.json
+scripts
+*.md
