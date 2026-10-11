@@ -1,0 +1,16 @@
+# Local catcher for compose Mailpit (SMTP inside the docker network).
+# Switch worker with:
+#   MAIL_PROVIDERS_FILE=./config/mail-providers.mailpit.yml
+#
+# Host-run worker against compose Mailpit:
+#   set host to 127.0.0.1 and port to `docker compose port mailpit 1025`
+providers:
+  - id: mailpit
+    kind: smtp
+    enabled: true
+    weight: 1
+    cooldown: 5s
+    from: noreply@bullmq-mail.local
+    host: mailpit
+    port: 1025
+    security: plain

@@ -1,0 +1,88 @@
+services:
+  redis:
+    image: redis:7-alpine
+    command: ["redis-server", "--appendonly", "yes", "--save", "60", "1000"]
+    # Random host port to avoid clashing with other local Redis instances.
+    # Discover with: docker compose port redis 6379
+    ports:
+      - "6379"
+    volumes:
+      - redis-data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+      start_period: 5s
+    restart: unless-stopped
+
+  mailpit:
+    image: axllent/mailpit:latest
+    environment:
+      MP_MAX_MESSAGES: "5000"
+      MP_DATABASE: /data/mailpit.db
+      MP_SMTP_AUTH_ACCEPT_ANY: "1"
+      MP_SMTP_AUTH_ALLOW_INSECURE: "1"
+    volumes:
+      - mailpit-data:/data
+    # Random host ports. Discover with:
+    #   docker compose port mailpit 8025  # Web UI
+    #   docker compose port mailpit 1025  # SMTP
+    ports:
+      - "8025"
+      - "1025"
+    healthcheck:
+      test: ["CMD", "wget", "-q", "-O", "-", "http://127.0.0.1:8025/api/v1/info"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+      start_period: 5s
+    restart: unless-stopped
+
+  api:
+    image: oven/bun:1.4.2-alpine
+    working_dir: /app
+    command: ["bun", "run", "src/main.ts"]
+    env_file:
+      - .env
+    environment:
+      REDIS_HOST: redis
+      REDIS_PORT: "6379"
+      API_HOST: 0.0.0.0
+      API_PORT: "3000"
+    volumes:
+      - ./:/app
+    # Random host port. Discover with: docker compose port api 3000
+    ports:
+      - "3000"
+    depends_on:
+      redis:
+        condition: service_healthy
+    stop_grace_period: 30s
+    restart: unless-stopped
+
+  worker:
+    image: oven/bun:1.4.2-alpine
+    working_dir: /app
+    command: ["bun", "run", "src/worker-main.ts"]
+    env_file:
+      - .env
+    environment:
+      REDIS_HOST: redis
+      REDIS_PORT: "6379"
+      MAIL_PROVIDERS_FILE: /app/config/mail-providers.yml
+      # Keep process grace shorter than stop_grace_period so Redis connections close cleanly.
+      SHUTDOWN_GRACE_MS: "20000"
+    volumes:
+      - ./:/app
+    depends_on:
+      redis:
+        condition: service_healthy
+    stop_grace_period: 30s
+    restart: unless-stopped
+    # Scale workers independently:
+    #   docker compose up -d --scale worker=2
+
+volumes:
+  redis-data:
+  mailpit-data:

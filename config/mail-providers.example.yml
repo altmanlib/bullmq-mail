@@ -1,0 +1,13 @@
+# Copy to mail-providers.yml (mode 600). Do not commit real passwords if this repo is shared.
+providers:
+  - id: smtp-1
+    kind: smtp
+    enabled: true
+    weight: 1
+    cooldown: 2m
+    from: noreply@example.com
+    host: smtp.example.com
+    port: 465
+    security: implicit # implicit | starttls | plain
+    username: noreply@example.com
+    password: "replace-me"
