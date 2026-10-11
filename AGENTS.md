@@ -3,8 +3,9 @@
 - Runtime: Bun + TypeScript 6
 - Package manager: `bun`
 - Queue: BullMQ (requires `ioredis` connection options; do not replace with `Bun.redis`)
-- HTTP: `Bun.serve` routes; Bull Board via `@bull-board/bun`
+- HTTP: `Bun.serve` routes; observability via `/health` + JSON logs
 - Mail: nodemailer + YAML SMTP account pool (`config/mail-providers.yml`)
 - Processes: `src/main.ts` (API/Queue) and `src/worker.ts` (Worker) stay separate
-- Image: multi-stage `Dockerfile` on `oven/bun:<ver>-alpine`; same image, different CMD for API/Worker
+- Prod bundle: `bun build src/main.ts src/worker.ts --target=bun --outdir dist` (deps inlined; no UI)
+- Image: multi-stage `Dockerfile` on `oven/bun:<ver>-alpine`; runtime only has `dist/` + config; same image, different CMD for API/Worker
 - Compose: `compose.yml` (dev bind-mount) / `compose-prod.yml` (build image); host ports are random — use `docker compose port <service> <port>`

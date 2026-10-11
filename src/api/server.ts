@@ -1,6 +1,3 @@
-import { createBullBoard } from "@bull-board/api";
-import { BullMQAdapter } from "@bull-board/api/bullMQAdapter";
-import { BunAdapter } from "@bull-board/bun";
 import type { Job } from "bullmq";
 import type { EnqueueMailInput } from "../queue/mail-jobs.ts";
 import { enqueueMail, type MailQueue } from "../queue/mail-queue.ts";
@@ -11,16 +8,6 @@ export type ApiServer = {
 };
 
 export function startApiServer(options: { host: string; port: number; queue: MailQueue }): ApiServer {
-  const serverAdapter = new BunAdapter();
-  serverAdapter.setBasePath("/ui");
-
-  createBullBoard({
-    queues: [new BullMQAdapter(options.queue)],
-    serverAdapter,
-  });
-
-  const bullBoardRoutes = serverAdapter.getRoutes();
-
   const server = Bun.serve({
     hostname: options.host,
     port: options.port,
@@ -86,8 +73,6 @@ export function startApiServer(options: { host: string; port: number; queue: Mai
           return Response.json(await serializeJob(job));
         },
       },
-
-      ...bullBoardRoutes,
     },
   });
 

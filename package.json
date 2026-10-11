@@ -6,12 +6,11 @@
     "check": "biome check --write .",
     "api": "bun run src/main.ts",
     "worker": "bun run src/worker.ts",
+    "build": "bun build src/main.ts src/worker.ts --target=bun --outdir dist",
     "typecheck": "tsc --noEmit",
     "enqueue": "bun run scripts/enqueue-sample.ts"
   },
   "dependencies": {
-    "@bull-board/api": "^9.10.4",
-    "@bull-board/bun": "^9.10.4",
     "bullmq": "^6.3.12",
     "ioredis": "^6.0.0",
     "nodemailer": "^10.1.0",

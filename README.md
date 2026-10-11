@@ -1,6 +1,6 @@
 # bullmq-mail
 
-Bun + BullMQ 生产级邮件队列示例：API 入队、独立 Worker 消费、SMTP 账号池故障转移、Redis 持久化、Bull Board 观测、优雅停机。
+Bun + BullMQ 生产级邮件队列示例：API 入队、独立 Worker 消费、SMTP 账号池故障转移、Redis 持久化、优雅停机。
 
 ## 架构
 
@@ -27,7 +27,7 @@ Client ──POST /api/mail──▶ API (Bun.serve + Queue)
 | 限流 | Worker `limiter` 全局限制发送速率，保护 SMTP |
 | 幂等 | `idempotencyKey` → BullMQ `jobId` |
 | 账号池 | YAML 配置多 SMTP；失败后按 `cooldown` 冷却并故障转移 |
-| 观测 | `/ui` Bull Board；`/health` 队列计数；结构化 JSON 日志 |
+| 观测 | `/health` 队列计数；结构化 JSON 日志 |
 | 停机 | SIGINT/SIGTERM → `worker.close()` 排空当前任务；compose `stop_grace_period` 大于进程优雅期 |
 
 ## 快速开始
@@ -62,12 +62,11 @@ curl -s http://127.0.0.1:3000/api/mail \
   }'
 ```
 
-- Dashboard: http://127.0.0.1:3000/ui
 - Health: http://127.0.0.1:3000/health
 
 ## 全量 compose（API + Worker + Redis）
 
-开发态 `compose.yml` 仍挂载源码，直接用 `oven/bun` 跑。生产态用 `compose-prod.yml`：构建根目录 `Dockerfile`（仅生产依赖；API / Worker 共用同一镜像）。
+开发态 `compose.yml` 仍挂载源码，直接用 `oven/bun` 跑。生产态用 `compose-prod.yml`：`Dockerfile` 内 `bun build --target=bun --outdir dist` 打进依赖，运行时只带 `dist/`（API / Worker 共用同一镜像）。
 
 ```bash
 cp .env.example .env
@@ -162,5 +161,6 @@ MAIL_PROVIDERS_FILE=./config/mail-providers.mailpit.yml bun run worker
 |---|---|
 | `bun run api` | 启动 API |
 | `bun run worker` | 启动 Worker |
+| `bun run build` | `bun build --target=bun --outdir dist` |
 | `bun run typecheck` | `tsc --noEmit` |
 | `bun run scripts/enqueue-sample.ts --to ...` | 入队示例邮件 |

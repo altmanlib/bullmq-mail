@@ -18,7 +18,7 @@ log.info("api.started", {
   host: env.api.host,
   port: api.port,
   redis: `${env.redis.host}:${env.redis.port}/${env.redis.db}`,
-  ui: `http://127.0.0.1:${api.port}/ui`,
+  health: `http://127.0.0.1:${api.port}/health`,
 });
 
 await runUntilSignal(

@@ -55,7 +55,7 @@ services:
 
   api:
     <<: *app
-    command: ["src/main.ts"]
+    command: ["dist/main.js"]
     env_file:
       - .env
     environment:
@@ -74,7 +74,7 @@ services:
 
   worker:
     <<: *app
-    command: ["src/worker.ts"]
+    command: ["dist/worker.js"]
     env_file:
       - .env
     environment:
