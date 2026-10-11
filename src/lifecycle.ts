@@ -34,10 +34,7 @@ export function runUntilSignal(
 }
 
 /** Race drain against a grace window; always run close afterward. */
-export async function shutdownWithin(
-  graceMs: number,
-  hooks: { drain: () => Promise<void>; close: () => Promise<void> },
-): Promise<"drained" | "timeout"> {
+export async function shutdownWithin(graceMs: number, hooks: { drain: () => Promise<void>; close: () => Promise<void> }): Promise<"drained" | "timeout"> {
   let outcome: "drained" | "timeout" = "drained";
   let timer: ReturnType<typeof setTimeout> | undefined;
   try {

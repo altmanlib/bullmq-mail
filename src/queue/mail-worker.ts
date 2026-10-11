@@ -2,12 +2,7 @@ import type { ConnectionOptions, Job } from "bullmq";
 import { Worker } from "bullmq";
 import { log } from "../log.ts";
 import type { Mailer } from "../mail/types.ts";
-import {
-  MAIL_JOB_SEND,
-  MAIL_QUEUE_NAME,
-  type SendMailJobData,
-  type SendMailJobResult,
-} from "./mail-jobs.ts";
+import { MAIL_JOB_SEND, MAIL_QUEUE_NAME, type SendMailJobData, type SendMailJobResult } from "./mail-jobs.ts";
 
 export type MailWorkerOptions = {
   connection: ConnectionOptions;
@@ -17,18 +12,10 @@ export type MailWorkerOptions = {
   rateDurationMs: number;
 };
 
-export type MailWorker = Worker<
-  SendMailJobData,
-  SendMailJobResult,
-  typeof MAIL_JOB_SEND
->;
+export type MailWorker = Worker<SendMailJobData, SendMailJobResult, typeof MAIL_JOB_SEND>;
 
 export function createMailWorker(options: MailWorkerOptions): MailWorker {
-  const worker = new Worker<
-    SendMailJobData,
-    SendMailJobResult,
-    typeof MAIL_JOB_SEND
-  >(MAIL_QUEUE_NAME, async (job) => processMailJob(job, options.mailer), {
+  const worker = new Worker<SendMailJobData, SendMailJobResult, typeof MAIL_JOB_SEND>(MAIL_QUEUE_NAME, async (job) => processMailJob(job, options.mailer), {
     connection: options.connection,
     concurrency: options.concurrency,
     // Global rate limit across all worker processes for this queue.
@@ -74,18 +61,13 @@ export function createMailWorker(options: MailWorkerOptions): MailWorker {
   return worker;
 }
 
-async function processMailJob(
-  job: Job<SendMailJobData, SendMailJobResult, typeof MAIL_JOB_SEND>,
-  mailer: Mailer,
-): Promise<SendMailJobResult> {
+async function processMailJob(job: Job<SendMailJobData, SendMailJobResult, typeof MAIL_JOB_SEND>, mailer: Mailer): Promise<SendMailJobResult> {
   if (job.name !== MAIL_JOB_SEND) {
     throw new Error(`unknown mail job name: ${job.name}`);
   }
 
   await job.updateProgress(10);
-  await job.log(
-    `sending via mailer=${mailer.id} attempt=${job.attemptsMade + 1}`,
-  );
+  await job.log(`sending via mailer=${mailer.id} attempt=${job.attemptsMade + 1}`);
 
   const result = await mailer.send({
     to: job.data.to,
@@ -96,9 +78,7 @@ async function processMailJob(
   });
 
   await job.updateProgress(100);
-  await job.log(
-    `sent via provider=${result.providerId} messageId=${result.messageId ?? "-"}`,
-  );
+  await job.log(`sent via provider=${result.providerId} messageId=${result.messageId ?? "-"}`);
 
   return {
     providerId: result.providerId,

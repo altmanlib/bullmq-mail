@@ -10,11 +10,7 @@ export type ApiServer = {
   stop(): Promise<void>;
 };
 
-export function startApiServer(options: {
-  host: string;
-  port: number;
-  queue: MailQueue;
-}): ApiServer {
+export function startApiServer(options: { host: string; port: number; queue: MailQueue }): ApiServer {
   const serverAdapter = new BunAdapter();
   serverAdapter.setBasePath("/ui");
 
@@ -31,14 +27,7 @@ export function startApiServer(options: {
     routes: {
       "/health": {
         GET: async () => {
-          const counts = await options.queue.getJobCounts(
-            "waiting",
-            "active",
-            "completed",
-            "failed",
-            "delayed",
-            "prioritized",
-          );
+          const counts = await options.queue.getJobCounts("waiting", "active", "completed", "failed", "delayed", "prioritized");
           return Response.json({
             status: "ok",
             queue: options.queue.name,
@@ -54,10 +43,7 @@ export function startApiServer(options: {
           try {
             body = await request.json();
           } catch {
-            return Response.json(
-              { error: "invalid JSON body" },
-              { status: 400 },
-            );
+            return Response.json({ error: "invalid JSON body" }, { status: 400 });
           }
 
           const parsed = parseEnqueueBody(body);
@@ -77,12 +63,8 @@ export function startApiServer(options: {
             );
           } catch (error) {
             // BullMQ throws when jobId already exists (idempotency hit).
-            const message =
-              error instanceof Error ? error.message : String(error);
-            if (
-              message.includes("Job is already") ||
-              message.toLowerCase().includes("exists")
-            ) {
+            const message = error instanceof Error ? error.message : String(error);
+            if (message.includes("Job is already") || message.toLowerCase().includes("exists")) {
               return Response.json(
                 {
                   error: "job with this idempotencyKey already exists",
@@ -98,11 +80,9 @@ export function startApiServer(options: {
 
       "/api/mail/:id": {
         GET: async (request) => {
-          const id = (request as Request & { params: { id: string } }).params
-            .id;
+          const id = (request as Request & { params: { id: string } }).params.id;
           const job = await options.queue.getJob(id);
-          if (!job)
-            return Response.json({ error: "job not found" }, { status: 404 });
+          if (!job) return Response.json({ error: "job not found" }, { status: 404 });
           return Response.json(await serializeJob(job));
         },
       },
@@ -125,9 +105,7 @@ export function startApiServer(options: {
   };
 }
 
-function parseEnqueueBody(
-  body: unknown,
-): { input: EnqueueMailInput } | { error: string } {
+function parseEnqueueBody(body: unknown): { input: EnqueueMailInput } | { error: string } {
   if (body === null || typeof body !== "object" || Array.isArray(body)) {
     return { error: "body must be an object" };
   }
@@ -164,9 +142,7 @@ function parseEnqueueBody(
   };
 }
 
-function parseRecipients(
-  value: unknown,
-): { value: string | string[] } | { error: string } {
+function parseRecipients(value: unknown): { value: string | string[] } | { error: string } {
   if (typeof value === "string") {
     const trimmed = value.trim();
     if (!trimmed) return { error: "to is required" };
@@ -189,8 +165,7 @@ function optionalString(value: unknown): string | undefined {
 function optionalInt(value: unknown): number | undefined | { error: string } {
   if (value === undefined || value === null || value === "") return undefined;
   const n = Number(value);
-  if (!Number.isInteger(n) || n < 0)
-    return { error: "priority/delayMs must be a non-negative integer" };
+  if (!Number.isInteger(n) || n < 0) return { error: "priority/delayMs must be a non-negative integer" };
   return n;
 }
 

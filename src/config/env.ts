@@ -37,19 +37,12 @@ export function loadEnv(env: Env = process.env): AppEnv {
       port: int(env.API_PORT, 3000, "API_PORT"),
     },
     mail: {
-      providersFile: str(
-        env.MAIL_PROVIDERS_FILE,
-        "./config/mail-providers.yml",
-      ),
+      providersFile: str(env.MAIL_PROVIDERS_FILE, "./config/mail-providers.yml"),
     },
     worker: {
       concurrency: int(env.WORKER_CONCURRENCY, 3, "WORKER_CONCURRENCY"),
       rateMax: int(env.WORKER_RATE_MAX, 5, "WORKER_RATE_MAX"),
-      rateDurationMs: int(
-        env.WORKER_RATE_DURATION_MS,
-        1000,
-        "WORKER_RATE_DURATION_MS",
-      ),
+      rateDurationMs: int(env.WORKER_RATE_DURATION_MS, 1000, "WORKER_RATE_DURATION_MS"),
     },
     shutdownGraceMs: int(env.SHUTDOWN_GRACE_MS, 20_000, "SHUTDOWN_GRACE_MS"),
   };
@@ -64,14 +57,9 @@ function optional(value: string | undefined): value is string {
   return value !== undefined && value.trim() !== "";
 }
 
-function int(
-  value: string | undefined,
-  fallback: number,
-  name: string,
-): number {
+function int(value: string | undefined, fallback: number, name: string): number {
   if (value === undefined || value.trim() === "") return fallback;
   const n = Number(value);
-  if (!Number.isInteger(n) || n < 0)
-    throw new Error(`${name} must be a non-negative integer`);
+  if (!Number.isInteger(n) || n < 0) throw new Error(`${name} must be a non-negative integer`);
   return n;
 }

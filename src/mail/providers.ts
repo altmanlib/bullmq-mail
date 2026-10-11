@@ -1,10 +1,6 @@
 import { readFileSync } from "node:fs";
 import { parse as parseYaml } from "yaml";
-import {
-  MailError,
-  type SmtpProviderConfig,
-  type SmtpSecurity,
-} from "./types.ts";
+import { MailError, type SmtpProviderConfig, type SmtpSecurity } from "./types.ts";
 
 type RawFile = {
   providers?: unknown;
@@ -18,53 +14,36 @@ export function loadProvidersFile(path: string): SmtpProviderConfig[] {
   try {
     text = readFileSync(path, "utf8");
   } catch (error) {
-    throw new MailError(
-      `cannot read mail providers file ${JSON.stringify(path)}`,
-      { cause: error },
-    );
+    throw new MailError(`cannot read mail providers file ${JSON.stringify(path)}`, { cause: error });
   }
 
   let raw: RawFile;
   try {
     raw = parseYaml(text) as RawFile;
   } catch (error) {
-    throw new MailError(
-      `invalid YAML in mail providers file ${JSON.stringify(path)}`,
-      { cause: error },
-    );
+    throw new MailError(`invalid YAML in mail providers file ${JSON.stringify(path)}`, { cause: error });
   }
 
   if (!Array.isArray(raw.providers)) {
-    throw new MailError(
-      `mail providers file ${JSON.stringify(path)} must have a providers array`,
-    );
+    throw new MailError(`mail providers file ${JSON.stringify(path)} must have a providers array`);
   }
 
-  const providers = raw.providers.map((item, index) =>
-    parseProvider(item, index, path),
-  );
+  const providers = raw.providers.map((item, index) => parseProvider(item, index, path));
   const enabled = providers.filter((p) => p.enabled);
   if (enabled.length === 0) {
-    throw new MailError(
-      `mail providers file ${JSON.stringify(path)} has no enabled providers`,
-    );
+    throw new MailError(`mail providers file ${JSON.stringify(path)} has no enabled providers`);
   }
   return providers;
 }
 
-function parseProvider(
-  item: unknown,
-  index: number,
-  path: string,
-): SmtpProviderConfig {
+function parseProvider(item: unknown, index: number, path: string): SmtpProviderConfig {
   if (item === null || typeof item !== "object" || Array.isArray(item)) {
     throw new MailError(`${path}: providers[${index}] must be an object`);
   }
   const raw = item as RawProvider;
   const id = requiredString(raw.id, path, index, "id");
   const kind = requiredString(raw.kind, path, index, "kind");
-  if (kind !== "smtp")
-    throw new MailError(`${path}: providers[${index}].kind must be "smtp"`);
+  if (kind !== "smtp") throw new MailError(`${path}: providers[${index}].kind must be "smtp"`);
 
   const enabled = raw.enabled === undefined ? true : Boolean(raw.enabled);
   const weight = numberOr(raw.weight, 1);
@@ -76,17 +55,12 @@ function parseProvider(
   const host = requiredString(raw.host, path, index, "host");
   const port = numberOr(raw.port, 465);
   if (!Number.isInteger(port) || port <= 0) {
-    throw new MailError(
-      `${path}: providers[${index}].port must be a positive integer`,
-    );
+    throw new MailError(`${path}: providers[${index}].port must be a positive integer`);
   }
 
   const security = parseSecurity(raw.security, port, path, index);
   const username = optionalString(raw.username);
-  const password =
-    raw.password === undefined || raw.password === null
-      ? undefined
-      : String(raw.password);
+  const password = raw.password === undefined || raw.password === null ? undefined : String(raw.password);
 
   return {
     id,
@@ -103,12 +77,7 @@ function parseProvider(
   };
 }
 
-function parseSecurity(
-  value: unknown,
-  port: number,
-  path: string,
-  index: number,
-): SmtpSecurity {
+function parseSecurity(value: unknown, port: number, path: string, index: number): SmtpSecurity {
   if (value === undefined || value === null || value === "") {
     return port === 465 || port === 994 ? "implicit" : "starttls";
   }
@@ -116,9 +85,7 @@ function parseSecurity(
   if (s === "implicit" || s === "ssl" || s === "smtps") return "implicit";
   if (s === "starttls" || s === "tls") return "starttls";
   if (s === "plain" || s === "none") return "plain";
-  throw new MailError(
-    `${path}: providers[${index}].security must be implicit|starttls|plain`,
-  );
+  throw new MailError(`${path}: providers[${index}].security must be implicit|starttls|plain`);
 }
 
 /** Accepts "2m", "30s", "500ms", or a bare millisecond number. */
@@ -132,26 +99,16 @@ function parseCooldown(value: unknown, path: string, index: number): number {
   }
   const text = String(value).trim().toLowerCase();
   const match = /^(\d+(?:\.\d+)?)(ms|s|m|h)?$/.exec(text);
-  if (!match)
-    throw new MailError(
-      `${path}: providers[${index}].cooldown is invalid: ${JSON.stringify(value)}`,
-    );
+  if (!match) throw new MailError(`${path}: providers[${index}].cooldown is invalid: ${JSON.stringify(value)}`);
   const amount = Number(match[1]);
   const unit = match[2] ?? "ms";
-  const mult =
-    unit === "ms" ? 1 : unit === "s" ? 1000 : unit === "m" ? 60_000 : 3_600_000;
+  const mult = unit === "ms" ? 1 : unit === "s" ? 1000 : unit === "m" ? 60_000 : 3_600_000;
   return Math.round(amount * mult);
 }
 
-function requiredString(
-  value: unknown,
-  path: string,
-  index: number,
-  field: string,
-): string {
+function requiredString(value: unknown, path: string, index: number, field: string): string {
   const s = optionalString(value);
-  if (s === undefined)
-    throw new MailError(`${path}: providers[${index}].${field} is required`);
+  if (s === undefined) throw new MailError(`${path}: providers[${index}].${field} is required`);
   return s;
 }
 

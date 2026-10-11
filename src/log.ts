@@ -1,11 +1,6 @@
 type Fields = Record<string, unknown>;
 
-function line(
-  level: string,
-  event: string,
-  fields?: Fields,
-  error?: unknown,
-): string {
+function line(level: string, event: string, fields?: Fields, error?: unknown): string {
   const payload: Fields = {
     ts: new Date().toISOString(),
     level,
@@ -13,10 +8,7 @@ function line(
     ...fields,
   };
   if (error !== undefined) {
-    payload.error =
-      error instanceof Error
-        ? { name: error.name, message: error.message, stack: error.stack }
-        : { message: String(error) };
+    payload.error = error instanceof Error ? { name: error.name, message: error.message, stack: error.stack } : { message: String(error) };
   }
   return JSON.stringify(payload);
 }

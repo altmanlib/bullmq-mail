@@ -43,10 +43,7 @@ await runUntilSignal(
         await mailer.close();
       },
     });
-    log.info(
-      outcome === "drained" ? "worker.stopped" : "worker.stopped.timeout",
-      { outcome },
-    );
+    log.info(outcome === "drained" ? "worker.stopped" : "worker.stopped.timeout", { outcome });
   },
   {
     forceExit: (signal) => {

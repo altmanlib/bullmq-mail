@@ -32,7 +32,5 @@ export class MailError extends Error {
 
 export type Mailer = {
   id: string;
-  send(
-    message: MailMessage,
-  ): Promise<{ providerId: string; messageId?: string }>;
+  send(message: MailMessage): Promise<{ providerId: string; messageId?: string }>;
 };
