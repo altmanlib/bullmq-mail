@@ -8,6 +8,7 @@
     "worker": "bun run src/worker.ts",
     "build": "bun build src/main.ts src/worker.ts --target=bun --outdir dist",
     "typecheck": "tsc --noEmit",
+    "test": "bun test --dots --parallel=4",
     "enqueue": "bun run scripts/enqueue-sample.ts"
   },
   "dependencies": {
